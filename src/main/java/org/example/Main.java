@@ -1,17 +1,40 @@
 package org.example;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-public class Main {
-    static void main(String[] args) {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
+import net.minestom.server.MinecraftServer;
+import net.minestom.server.coordinate.Pos;
+import net.minestom.server.entity.Player;
+import net.minestom.server.event.GlobalEventHandler;
+import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
+import net.minestom.server.instance.InstanceContainer;
+import net.minestom.server.instance.InstanceManager;
+import net.minestom.server.instance.LightingChunk;
+import net.minestom.server.instance.block.Block;
+import org.example.commands.BenchmarkCommand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
-        }
+public class Main {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+
+    static void main(String[] args) {
+        MinecraftServer minecraftServer = MinecraftServer.init();
+
+        InstanceManager instanceManager = MinecraftServer.getInstanceManager();
+        InstanceContainer instanceContainer = instanceManager.createInstanceContainer();
+
+        instanceContainer.setGenerator(generationUnit -> generationUnit.modifier().fillHeight(0, 2, Block.GRASS_BLOCK));
+        instanceContainer.setChunkSupplier(LightingChunk::new);
+
+        GlobalEventHandler globalEventHandler = MinecraftServer.getGlobalEventHandler();
+        globalEventHandler.addListener(AsyncPlayerConfigurationEvent.class, event -> {
+            final Player player = event.getPlayer();
+            event.setSpawningInstance(instanceContainer);
+            player.setRespawnPoint(new Pos(0, 4, 0));
+        });
+
+        MinecraftServer.getCommandManager().register(new BenchmarkCommand());
+
+        LOGGER.info("Starting Minestom server on 0.0.0.0:25565");
+        minecraftServer.start("0.0.0.0", 25565);
     }
 }
